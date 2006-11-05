@@ -1,283 +1,135 @@
 ###########################################################################
 # LPRng - An Extended Print Spooler System
 #
-# Copyright 1988-2001 Patrick Powell, San Diego, CA
-#     papowell@lprng.com
+# Copyright 1988-1997 Patrick Powell, San Diego, California
+#     papowell@sdsu.edu
 # See LICENSE for conditions of use.
 #
 ###########################################################################
-# MODULE: Makefile.in
-# PURPOSE: top level Makefile for LPD Software
-# $Id: Makefile.in,v 1.74 2004/09/24 20:19:52 papowell Exp $
+# MODULE: FAQ/Makefile
+# PURPOSE: generate utilities
+# Makefile.in,v 1.7 1998/03/30 02:37:07 papowell Exp
 ########################################################################## 
 
-#**************###########**************
-# You must use ANSI C and GNU Make!
-#***************************************
+# FAQ Makefile
+#
 
-PACKAGE=@PACKAGE@
-VERSION=@VERSION@
+FMT=LPRng-Reference
+DSSSL=docbook-1.54
+DSSSL=modular
+
 SRC=@srcdir@
-@SET_MAKE@
-INSTALL=@INSTALL@
 
-# prefix
-prefix=@prefix@
-# exec prefix
-exec_prefix=@exec_prefix@
-# for binaries
-bindir=@bindir@
-# for admin type of binaries
-sbindir=@sbindir@
-# for the filters
-libexecdir=@libexecdir@
-# for the configuration stuff
-sysconfdir=@sysconfdir@
-# for the man pages
-mandir=@mandir@
-# top build directory
-top_builddir=.
+CATALOGS= \
+      -c /usr/local/share/sgml/catalog \
+      -c /usr/local/share/sgml/docbook/dsssl/${DSSSL}/catalog
 
-LPD_PERMS_PATH=\"@LPD_PERMS_PATH@\"
-LPD_CONF_PATH=\"@LPD_CONF_PATH@\"
-PRINTCAP_PATH=\"@PRINTCAP_PATH@\"
-LPD_PATH=\"@LPD_DIR@/lpd\"
-SHELL="@SHELL@"
-LOCKFILE=\"@LOCKFILE@\"
-CONFIG_SUBDIR="@CONFIG_SUBDIR@"
-PSHOWALL="@PSHOWALL@"
-FILTER_DIR=@FILTER_DIR@
-LOCALEDIR=@LOCALEDIR@
-INIT=@INIT@
-USE_NLS=@USE_NLS@
-LIBTOOL=@LIBTOOL@
+DOC=LPRng-Reference
 
-#=============================================================================
-# List the directories you want to generate:
-# DIRS for all, clean, etc.
-# ALLDIRS for other such as documentation
-#=============================================================================
+all: license.enc license.txt y2k.txt $(DOC).html $(DOC).pdf LPRng-Reference-Multipart/index.htm purge
 
-DIRS= UTILS src po man
-INSTALLDIRS= UTILS src po man
-FILES=./postinstall ./preremove ./postremove ./lpd.conf
-ALLDIRS= ${DIRS} ${SRC}/TESTSUPPORT ${SRC}/DOCS
+LICENSE= $(SRC)/../LICENSE
 
-###############################################################################
+license.txt: $(LICENSE)
+	cp $(LICENSE) $@
 
-all: ${DIRS} ${FILES}
+license.enc: $(LICENSE) Makefile
+	echo "<![ CDATA [" >$@
+	cat $(LICENSE) >>$@
+	echo "]]>" >>$@
 
-SCRIPTS=init.freebsd init.linux init.redhat init.linuxsb init.solaris ltmain postinstall.freebsd postinstall.generic postinstall.linux postinstall.solaris postremove.generic postremove.solaris preinstall.solaris preremove.freebsd preremove.generic preremove.linux preremove.solaris
+y2k.txt: $(SRC)/../Y2KCompliance
+	cp  $(SRC)/../Y2KCompliance $@
 
-$(SCRIPTS): header
-	cat header ${SRC}/$@.sh >$@
-	chmod 755 $@;
+$(DOC).html: $(DOC).sgml $(DOC).dsl Makefile license.enc
+	jade -i output.html -V nochunks -t sgml \
+		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml >$(DOC).html
+	-tidy -i -m -f /dev/null ${TIDYFLAGS} $@
+	perl ./updateheader $@
 
-header: Makefile
-	@echo "#!@SHELL@" >$@
-	@echo PREFIX=$(prefix) >>$@
-	@echo LPD_PATH=$(LPD_PATH) >>$@
-	@echo INSTALL=\"$(INSTALL)\" >>$@
-	@echo LPD_PERMS_PATH=$(LPD_PERMS_PATH) >>$@
-	@echo LPD_CONF_PATH=$(LPD_CONF_PATH) >>$@
-	@echo PRINTCAP_PATH=$(PRINTCAP_PATH) >>$@
-	@echo SYSCONFDIR=$(sysconfdir) >>$@
-	@echo SBINDIR=$(sbindir) >>$@
-	@echo FILTER_DIR=$(FILTER_DIR) >>$@
-	@echo LOCKFILE=$(LOCKFILE) >>$@
-	@echo CONFIG_SUBDIR=$(CONFIG_SUBDIR) >>$@
-	@echo PSHOWALL=\"$(PSHOWALL)\"  >>$@
-	@echo "VERSION=$(VERSION)" >>$@
-	@echo "INIT=$(INIT)" >>$@
-	@echo "MANDIR=$(mandir)" >>$@
+check: license.enc
+	#nsgmls -s -f handbook.errs handbook.sgml
+	nsgmls -s $(CATALOGS) $(DOC).sgml
 
-./postinstall: $(SCRIPTS) Makefile
-	OSNAME=@OSNAME@; case "@OSNAME@" in \
-	 *linux* ) OSNAME=linux;; \
-	 *freebsd* ) OSNAME=freebsd;; \
-	 *solaris* ) OSNAME=solaris;; \
-	esac; \
-	if test -f postinstall.$${OSNAME} ; then s=postinstall.$${OSNAME} ; else s=postinstall.generic; fi; \
-	echo POSTINSTALL "'$$s'"; cp $$s postinstall;
+$(DOC).tex: $(DOC).sgml $(FMT).dsl Makefile
+	jade -Vtex-backend -ioutput.print -t tex -o $(DOC).tex \
+		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml
 
-./preremove: $(SCRIPTS) Makefile
-	OSNAME=@OSNAME@; case "@OSNAME@" in *linux* ) OSNAME=linux;; esac; \
-	if test -f preremove.$${OSNAME} ; then s=preremove.$${OSNAME} ; else s=preremove.generic; fi; \
-	echo PREREMOVE "'$$s'"; cp $$s preremove;
+$(DOC).dvi: $(DOC).tex $(FMT).dsl Makefile
+	@echo "==> TeX pass 1/3"
+	-tex "&jadetex" $(DOC).tex  2>&1 >/dev/null
+	@echo "==> TeX pass 2/3"
+	-tex "&jadetex" $(DOC).tex  2>&1 >/dev/null
+	@echo "==> TeX pass 3/3"
+	tex "&jadetex" $(DOC).tex
 
-./postremove: $(SCRIPTS) Makefile
-	OSNAME=@OSNAME@; case "@OSNAME@" in *linux* ) OSNAME=linux;; esac; \
-	if test -f postremove.$${OSNAME} ; then s=postremove.$${OSNAME} ; else s=postremove.generic; fi; \
-	echo POSTREMOVE "'$$s'"; cp $$s postremove;
+$(DOC).ps: $(DOC).dvi
+	dvips -q -t letter -o $(DOC).ps $(DOC).dvi
+$(DOC).pdf: $(DOC).ps
+	ps2pdf -dPDFSETTINGS=/default \
+	-dEmbedAllFonts=true \
+	-dAntiAliasColorImages=true \
+	-dAntiAliasGrayImages=true \
+	-dAntiAliasMonoImages=true \
+	-dCompatibilityLevel=1.2  \
+	$(DOC).ps $(DOC).pdf
 
-# define default target
-.PHONY: all warn TAGS clean uninstall install  info dvi check \
-	tar send realclean mostlyclean distclean dist update ci cifiles $(ALLDIRS) \
+purge:
+	rm -f *.aux *.log *.toc *.fot *.ps *.dvi *.tex
 
-MAKETARGET=all
 
-###############################################################################
-$(ALLDIRS):
-	if [ "$@" = po ] ; then \
-	    for i in po/Makefile* ; do \
-		if [ -f "$$i" ] ; then \
-		    if grep '^mkinstalldirs.*=.*case' $$i ; then \
-			echo "fixing broken $$i which causes wrong path to mkinstalldirs to be used"; \
-			perl -spi -e 's:^mkinstalldirs\s*=\s*.*:mkinstalldirs = \$$(SHELL) \$$(MKINSTALLDIRS):' $$i; \
-		    fi \
-		fi \
-	    done \
-	fi
-	if [ "$@" != po -o "$(USE_NLS)" != "no" ] ; then \
-		cd $@; $(MAKE) localedir=${LOCALEDIR} \
-			DESTDIR=$(DESTDIR) $(MAKETARGET) ; \
-	fi
+.PHONY: all clean install ci install.zman update purge
 
-TAGS clean::
-	-$(MAKE) MAKETARGET=$@ DESTDIR=$(DESTDIR) $(DIRS)
+update:
+	perl ./updatesgmlmirrors ../MIRRORS *.sgml
+	perl ./updateversion *.sgml
+	cp ../CHANGES .
+	rm -f genindex.sgml
+	perl collateindex.pl -t "Index" -N -o genindex.sgml
+	jade -V html-index -V nochunks -t sgml \
+		$(CATALOGS) -d \
+		/usr/local/share/sgml/docbook/dsssl/modular/html/docbook.dsl \
+		$(DOC).sgml >/dev/null
+	perl collateindex.pl -t "Index" -o genindex.sgml HTML.index
+	${MAKE} all
 
-clean::
-	-rm -f header lpd.conf $(FILES) $(SCRIPTS) postinstall preremove postremove a.out
-	-rm -f *.bak ? ?.* core *.old *~ po/*~
+# 
+#
+install:
+	
+clean:
+	-rm -f *.errs HTML.* *.tex *.log *.aux *.toc *.dvi *.ps *.tex
 
-install: all
-	$(MAKE) MAKETARGET=$@ DESTDIR=$(DESTDIR) $(INSTALLDIRS)
+mostlyclean distclean:: clean
 
-	if [ "${POSTINSTALL}" != "NO" -a "${POSTINSTALL}" != "no" ] ; then \
-		MAKEINSTALL=YES DESTDIR=$(DESTDIR) $(SHELL) postinstall ; \
-	fi;
-	@echo "";
-
-info dvi check:
-
-./lpd.conf: src/lpd.conf
-	cp src/lpd.conf $@
-	chmod 644 $@
-
-src/lpd.conf:
-	cd src; $(MAKE) MAKETARGET=lpd.conf
-
-realclean mostlyclean distclean: clean
-	rm -rf DISTRIBUTIONS/FreeBSD*/work DISTRIBUTIONS/FreeBSD*/LPRng*z ;
-	$(MAKE) MAKETARGET=$@ DESTDIR=$(DESTDIR) $(ALLDIRS)
-	rm -f `find . -type f -name '*.old' -print` \
-	 `find . -type f -name '*.bak' -print` \
-	 `find . -type f -name '*.orig' -print` \
-	  configure.lineno config.cache config.log config.status lpd.conf libtool \
-	  Makefile */Makefile po/POTFILES
-	rm -f `find . -type f -name '*.in' -print | sed -e 's/\.in$$//' -e /configure/d `
-
-###############################################################################
-uninstall:
-	echo "you must uninstall by hand"
-
-ci: cifiles
-	for i in $(ALLDIRS); do \
-		case $$i in \
-		po ) ;; \
-		* ) $(MAKE) MAKETARGET=$@ $$i ;; \
-		esac; \
-	done;
-	chmod 755 `find . -name install-sh -print`
-	chmod 755 `find . -name mkinstalldirs -print`
+realclean: clean purge
+	-rm -f CHANGES HTML.* genindex.sgml
+	-rm -f *.ps *.dvi *.htm *.html *.pdf
+	-rm -rf LPRng-Reference-Multipart
+	
 
 #CI=
 #CO=-kv
 CO=-l
-
-cifiles:
-	for i in . $(ALLDIRS); do \
-		if test ! -d $$i/RCS ; then \
-			mkdir $$i/RCS; \
-		fi; \
-	done;
+cifast ci: clean
 	checkin() { \
 		(set +e; rcs -l $$1; exit 0); \
 		ci $(CI) -l -u -f -mUpdate -t-Initial $$1; \
 	}; \
-	for i in * */Makefile po/* ; do \
-		if test -f "$$i" ; then \
-			case "$$i" in  \
-			*.mo ) ;; \
-			config.* ) ;; \
-			configure ) ;; \
-			* ) checkin $$i ;; \
-			esac; \
-		fi; \
+	for i in  *.sgml Makefile.in Makefile; do \
+		checkin $$i; \
 	done;
 
-###############################################################################
-# Update the patch level when you make a new version
-# do this before you start changes
-# Don't even think about making this configurable, it is for
-# distribution and update purposes only!
-#  Patrick Powell
-###############################################################################
+correct:
+	correct -d dict *.sgml
 
-update:
-	rm -f src/include/license.h src/include/copyright.h
-	sed -e 's/"/\\"/g' -e 's/.*/"&",/' LICENSE >src/include/license.h
-	sed -e 's/"/\\"/g' -e 's/.*/"&",/' COPYRIGHT >src/include/copyright.h
-	for i in VERSION ./src/include/patchlevel.h configure.in ; do \
-		rcs -l $$i; chmod +w $$i; \
-	done;
-	if [ -x /bin/pwd ] ; then DIR=`/bin/pwd`; fi ; \
-	if [ -x /usr/bin/pwd ] ; then DIR=`/usr/bin/pwd`; fi ; \
-	DIR=`echo $${DIR} | sed 's,.*/,,'`; \
-	DIRVER=` echo $${DIR} | sed 's,.*-,,'`; \
-	echo DIR $${DIR}, DIRVER $${DIRVER}; \
-	echo "#define PATCHLEVEL \"$${DIR}\"" >./src/include/patchlevel.h; \
-	echo $${DIR} >VERSION; \
-	S=`echo *.sh | sed -e 's/\.sh//g'`; \
-	perl -spi -e "s,=.*,=$${DIRVER}, if(/^VERSION=/ or /^#.* VERSION=/); \
-		s,^DISTNAME=.*,DISTNAME=$${DIR},; \
-		s,^PORTNAME=.*,PORTNAME=$(PACKAGE),; \
-		s,^PORTVERSION=.*,PORTVERSION=$${DIRVER},; \
-		s,package name \".*\",package name \"$${DIR}\",; \
-		s,^SCRIPTS=.*,SCRIPTS=$$S,;" \
-		configure.in lpd.perms.in \
-		DISTRIBUTIONS/*/Makefile \
-		po/Makefile.in.in printcap
-	perl -spi -e 's,.*,"Project-Id-Version: $(PACKAGE) $(VERSION)\\n", if(/^"Project-Id/);' \
-		po/*.po
-	sh CREATE_CONFIGURE
-	sh STANDARD_configuration
-#	ci $(CI) -l -f -mUpdate -t-Initial Makefile DOCS/Makefile src/Makefile
-	for i in DOCS man ; do \
-		(cd $$i ; $(MAKE) $@ ); \
-	done;
-	for i in po ; do \
-		(cd $$i ; $(MAKE) update-po ); \
-	done
+LPRng-Reference-Multipart/index.htm: $(DOC).sgml $(DOC).dsl Makefile license.enc
+	rm -rf LPRng-Reference-Multipart;
+	if [ ! -d LPRng-Reference-Multipart ] ; then mkdir LPRng-Reference-Multipart; fi
+	cp LPRng.jpg LPRngT-L.jpg LPRng-Reference-Multipart
+	jade -i output.html -V html-manifest -t sgml \
+		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml
+	-tidy -i -m -f /dev/null ${TIDYFLAGS} `xargs < HTML.manifest`
+	perl ./updateheader index.htm
+	mv *.htm LPRng-Reference-Multipart
 
-###############################################################################
-# Make a gnutar distribution
-#   - note that not all the source tree is sent out
-#
-###############################################################################
-
-tar: distclean
-	chmod a+x STANDARD_configuration configure
-	rm -f */Makefile Makefile
-	chmod 755 `find . -name install-sh -print`
-	chmod 755 `find . -name mkinstalldirs -print`
-	chmod -R +w .
-	if [ -x /bin/pwd ] ; then DIR=`/bin/pwd`; fi ; \
-	if [ -x /usr/bin/pwd ] ; then DIR=`/usr/bin/pwd`; fi ; \
-	echo $${DIR}; \
-	DIR=`echo $${DIR} | sed 's,.*/,,'`; \
-		cd ..; \
-		tar '--exclude=RCS' -zcf $${DIR}.tgz $${DIR}; \
-		md5 $${DIR}.tgz | pgp -fast -u papowell@lprng > $${DIR}.tgz.md5
-	@echo ""
-
-configure: configure.in
-	autoconf
-	autoheader
-	chmod a+x STANDARD_configuration configure
-
-dist: update ci distclean tar send
-redist: ci distclean tar send
-
-send:
-	if [ -f ../SENDTO ] ; then (cd ..; sh SENDTO) ; fi
