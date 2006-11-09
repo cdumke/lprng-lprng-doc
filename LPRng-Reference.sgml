@@ -602,8 +602,6 @@ print server.
 See
 <link linkend="rfc1179ref">RFC1179</link>
 for more a discussion of this protocol and more details about the RFC.
-The <ulink URL="rfc1179.txt">rfc1179.txt</ulink> file is included
-in the &LPRng; distribution documentation.</para>
 
 </sect2>
 
