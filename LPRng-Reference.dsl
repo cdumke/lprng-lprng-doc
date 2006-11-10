@@ -84,8 +84,9 @@
       <!-- Both sets of stylesheets ..................................... -->
       (define %section-autolabel% #t)
       (define %may-format-variablelist-as-table% #f)
+<!-- Without these two line, html generation takes a few seconds instead over a day...
       (define %indent-programlisting-lines% "    ")
-      (define %indent-screen-lines% "    ")
+      (define %indent-screen-lines% "    ") -->
       (define (toc-depth nd)
         (if (string=? (gi nd) (normalize "book"))
           7
