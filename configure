@@ -1,0 +1,50 @@
+#!/bin/sh
+
+if [ "${JADE+set}" != "set" ] ;  then
+	if which openjade &> /dev/null ; then
+		JADE=openjade
+	elif which jade &> /dev/null ; then
+		JADE=jade
+	else
+		echo "No (open)jade binary in your path."
+		echo "Please add JADE=/path/to/command to your configure call."
+		exit 1
+	fi
+fi
+if [ "${JADETEX+set}" != "set" ] ;  then
+	if which jadetex &> /dev/null ; then
+		JADETEX=jadetex
+	else
+		echo "No jadetex binary in your path."
+		echo "Please add JADETEX=/path/to/command to your configure call."
+		exit 1
+	fi
+fi
+if [ "${DOCBOOK+set}" != "set" ] ;  then
+	for dir in /usr/share/sgml/docbook/stylesheet/dsssl \
+			/usr/local/share/sgml/docbook/dsssl ; do
+		if [ -e "$dir/modular/html/docbook.dsl" ] ; then
+			DOCBOOK=$dir
+		fi
+	done
+	if [ "${DOCBOOK+set}" != "set" ] ;  then
+		echo "Could not find modular/html/docbook.dsl."
+		echo "Please add DOCBOOK=/path to your configure call."
+		exit 1
+	fi
+fi
+
+echo "Configuring with:"
+echo "jade to use        : $JADE"
+echo "additional catalogs: $CATALOGS"
+echo "docbook.dsl to use : $DOCBOOK/modular/html/docbook.dsl"
+echo "jadetex to use     : $JADETEX"
+
+sed \
+	-e "s,@CATALOGS@,${CATALOGS//,/\\,}," \
+	-e "s,@DOCBOOK@,${DOCBOOK//,/\\,}," \
+	-e "s,@CATALOGS@,${CATALOGS//,/\\,}," \
+	-e "s,@JADE@,${JADE//,/\\,}," \
+	-e "s,@JADETEX@,${JADETEX//,/\\,}," \
+	-e "s,@SRCDIR@,.," \
+	Makefile.intest > Makefile
