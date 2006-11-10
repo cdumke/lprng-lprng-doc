@@ -1,5 +1,36 @@
 #!/bin/sh
 
+while [ $# -gt 0 ] ; do
+	case $1 in
+		JADE=*)
+			JADE="${1#JADE=}"
+			;;
+		JADETEX=*)
+			JADETEX="${1#JADETEX=}"
+			;;
+		DOCBOOK=*)
+			DOCBOOK="${1#DOCBOOK=}"
+			;;
+		CATALOGS=*)
+			CATALOGS="${1#CATALOGS=}"
+			;;
+		--help)
+			echo "./configure: Generate Makefile out of Makefile.in"
+			echo "Syntax: ./configure [options]"
+			echo "supported options are:"
+			echo " JADE=jade to use (default is openjade or jade in your path)"
+			echo " JADETEX=jadetex to use (default is jadetex in your path)"
+			echo " DOCBOOK=path containing a modular/html/docbook.ds"
+			echo " CATALOGS=additional parameters to give to jade"
+			exit 0
+			;;
+		*)
+			echo "Unexpected parameter '$1'!" 2>&1
+			exit 2
+			;;
+	esac
+	shift
+done
 if [ "${JADE+set}" != "set" ] ;  then
 	if which openjade &> /dev/null ; then
 		JADE=openjade
@@ -47,4 +78,4 @@ sed \
 	-e "s,@JADE@,${JADE//,/\\,}," \
 	-e "s,@JADETEX@,${JADETEX//,/\\,}," \
 	-e "s,@SRCDIR@,.," \
-	Makefile.intest > Makefile
+	Makefile.in > Makefile
