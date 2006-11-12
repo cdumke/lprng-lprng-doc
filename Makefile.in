@@ -26,31 +26,30 @@ CATALOGS=@CATALOGS@
 #DOCBOOKDSSSL=/usr/local/share/sgml/docbook/dsssl
 DOCBOOKDSSSL=@DOCBOOK@
 
-all: $(REFERENCED) $(DOC).html $(DOC).pdf 
-#  LPRng-Reference-Multipart/index.htm
+all: $(REFERENCED) $(DOC).html $(DOC).pdf HTML.manifest
 
-REFERENCED = license.txt
+REFERENCED = license.txt LPRng.png LPRngT-L.png
 INCLUDED = license.enc y2k.txt
 NEEDED = $(INCLUDED) $(FMT).dsl genindex.sgml
-DISTFILES = license.txt y2k.txt $(DOC).sgml
+DISTFILES = license.txt y2k.txt $(DOC).sgml 
 
 MOSTLYCLEANFILES = *.errs HTML.* \
 		   *.tex *.log *.aux *.toc *.dvi *.ps \
 		   genindex.sgml license.enc
-CLEANFILES = $(MOSTLYCLEANFILES) *.htm *.html *.pdf LPRng-Reference-Multipart
+CLEANFILES = *.htm *.html *.pdf
 
-license.enc: license.txt Makefile
+license.enc: license.txt
 	echo "<![ CDATA [" >$@
 	cat license.txt >>$@
 	echo "]]>" >>$@
 
 genindex.sgml: $(DOC).sgml $(INCLUDED)
 	-rm -f genindex.sgml
-	perl collateindex.pl -t "Index" -N -o genindex.sgml
+	perl collateindex.pl -t "Index" -i indexes -N -o genindex.sgml
 	$(JADE) -t sgml -V html-index -V nochunks \
 		$(CATALOGS) -d $(DOCBOOKDSSSL)/modular/html/docbook.dsl \
 		$(DOC).sgml >/dev/null
-	perl collateindex.pl -t "Index" -o genindex.sgml HTML.index
+	perl collateindex.pl -t "Index" -i indexes -o genindex.sgml HTML.index
 
 $(DOC).html: $(DOC).sgml $(NEEDED)
 	$(JADE) -i output.html -V nochunks -t sgml \
@@ -85,19 +84,13 @@ $(DOC).pdf: $(DOC).ps
 	-dCompatibilityLevel=1.2  \
 	$(DOC).ps $(DOC).pdf
 
-purge:
-	rm -f *.aux *.log *.toc *.fot *.ps *.dvi *.tex
-
-
-.PHONY: all mostlyclean distclean clean install update purge correct
+.PHONY: all mostlyclean distclean clean install update correct check-manifest check
 
 update:
 	perl ./updatesgmlmirrors ../MIRRORS *.sgml
 	perl ./updateversion *.sgml
 	${MAKE} all
 
-install:
-	
 mostlyclean:
 	-rm -f $(MOSTLYCLEANFILES)
 
@@ -110,12 +103,17 @@ distclean: clean
 correct:
 	correct -d dict *.sgml
 
-LPRng-Reference-Multipart/index.htm: $(DOC).sgml $(DOC).dsl Makefile license.enc
-	rm -rf LPRng-Reference-Multipart;
-	if [ ! -d LPRng-Reference-Multipart ] ; then mkdir LPRng-Reference-Multipart; fi
-	cp LPRng.png LPRngT-L.png LPRng-Reference-Multipart
+HTML.manifest: $(DOC).sgml $(NEEDED)
 	$(JADE) -i output.html -V html-manifest -t sgml \
 		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml
-	-tidy -i -m -f /dev/null ${TIDYFLAGS} `xargs < HTML.manifest`
+	-xargs tidy -i -m -f /dev/null ${TIDYFLAGS} < HTML.manifest
 	perl ./updateheader index.htm
-	mv *.htm LPRng-Reference-Multipart
+	-if [ -e manifest ] ; then diff manifest HTML.manifest ; fi
+
+install: $(REFERENCED) HTML.manifest $(DOC).html $(DOC).pdf
+	install -d $(DESTDIR)$(pkgdatadir)
+	install -d $(DESTDIR)$(pkgdatadir)/$(DOC)-Multipart
+	install -m 0644 $(REFERENCED) $(DESTDIR)$(pkgdatadir)/$(DOC)-Multipart/
+	xargs -i{} install -m 0644 {} $(DESTDIR)$(pkgdatadir)/$(DOC)-Multipart/ < HTML.manifest
+	install -m 0644 $(REFERENCED) $(DESTDIR)$(pkgdatadir)/
+	install -m 0644 $(DOC).html $(DOC).pdf $(DESTDIR)$(pkgdatadir)/
