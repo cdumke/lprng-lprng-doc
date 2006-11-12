@@ -5408,10 +5408,10 @@ the
 <application remap=tt>a2ps</application>
 (Ascii to PostScript)
 converter by
-<ulink URL="demaille@inf.enst.fr">Akim Demaille</ulink>
+<ulink URL="http://demaille@inf.enst.fr">Akim Demaille</ulink>
 and
-<ulink URL="santana@st.com">Miguel Santana</ulink> is available from
-<ulink URL="www-inf.enst.fr/~demaille/a2ps">www-inf.enst.fr/~demaille/a2ps</ulink>.
+<ulink URL="mailto:santana@st.com">Miguel Santana</ulink> is available from
+<ulink URL="http://www-inf.enst.fr/~demaille/a2ps">www-inf.enst.fr/~demaille/a2ps</ulink>.
 This package provides a very nice set of facilities for
 massaging,
 mangling,
