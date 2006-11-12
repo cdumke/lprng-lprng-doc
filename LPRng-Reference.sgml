@@ -116,7 +116,7 @@ in a simple manner,  as well as providing extensive help and diagnostics.
 </abstract>
 </bookinfo>
 
-<preface><title>Preface</title>
+<preface id=preface><title>Preface</title>
 
 <sect1><title>Introduction</title>
 <para>
@@ -142,7 +142,7 @@ should be consulted for details about their operation.
 </sect1>
 
 
-<sect1><title>Acknowledgements</title>
+<sect1 id=acknowledgements><title>Acknowledgements</title>
 <para>I would like to thank all of the &LPRng; users
 who so relentlessly tried the incredible number of permutations and
 combinations of printers and software,
@@ -151,7 +151,7 @@ led to the development of the software.
 </para>
 </sect1>
 
-<sect1><title>Shell Prompts</title>
+<sect1 id=prompts><title>Shell Prompts</title>
 
       <para>The following table shows the default system prompt and superuser
     prompt. The examples will use this prompt to indicate which user you
@@ -181,7 +181,7 @@ led to the development of the software.
       </informaltable>
     </sect1>
 
-<sect1><title>Typographic Conventions</title>
+<sect1 id=typoconventions><title>Typographic Conventions</title>
 
       <para>The following table describes the typographic conventions used in
     this book.</para>
@@ -252,7 +252,7 @@ do this.</entry>
       </informaltable>
     </sect1>
 
-<sect1><title>Notes, warnings, and examples</title>
+<sect1 id=notes><title>Notes, warnings, and examples</title>
 
       <para>Within the text appear notes, warnings, and examples.</para>
 
