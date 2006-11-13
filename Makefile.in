@@ -17,6 +17,7 @@ DOC=LPRng-Reference
 SRC=@SRCDIR@
 JADE=@JADE@
 JADETEX=@JADETEX@
+VERSION=3.8.29
 
 # if not in your standard sgml search path, something like:
 #      -c /usr/local/share/sgml/catalog \
@@ -31,7 +32,8 @@ all: $(REFERENCED) $(DOC).html $(DOC).pdf HTML.manifest
 REFERENCED = license.txt LPRng.png LPRngT-L.png
 INCLUDED = license.enc y2k.txt
 NEEDED = $(INCLUDED) $(FMT).dsl genindex.sgml
-DISTFILES = license.txt y2k.txt $(DOC).sgml 
+DISTFILES = license.txt y2k.txt $(DOC).sgml $(FMT).dsl $(FMT).dtd configure Makefile.in LPRng.png LPRngT-L.png LISA98.ppt updateheader collateindex.pl dict texmf.cnf
+distdir = lprng-doc-$(VERSION)
 
 MOSTLYCLEANFILES = *.errs HTML.* \
 		   *.tex *.log *.aux *.toc *.dvi *.ps \
@@ -51,13 +53,13 @@ genindex.sgml: $(DOC).sgml $(INCLUDED)
 		$(DOC).sgml >/dev/null
 	perl collateindex.pl -t "Index" -i indexes -o genindex.sgml HTML.index
 
-$(DOC).html: $(DOC).sgml $(NEEDED)
+$(DOC).html: $(DOC).sgml $(NEEDED) updateheader
 	$(JADE) -i output.html -V nochunks -t sgml \
 		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml > $@
 	-tidy -i -m -f /dev/null ${TIDYFLAGS} $@
 	perl ./updateheader $@
 
-check: $(INCLUDED)
+check: $(INCLUDED) $(DOC).sgml $(FMT).dtd
 	nsgmls -s $(CATALOGS) $(DOC).sgml
 
 $(DOC).tex: $(DOC).sgml $(NEEDED)
@@ -84,7 +86,7 @@ $(DOC).pdf: $(DOC).ps
 	-dCompatibilityLevel=1.2  \
 	$(DOC).ps $(DOC).pdf
 
-.PHONY: all mostlyclean distclean clean install update correct check-manifest check
+.PHONY: all mostlyclean distclean clean install update correct check-manifest check correct
 
 update:
 	perl ./updatesgmlmirrors ../MIRRORS *.sgml
@@ -100,10 +102,10 @@ clean: mostlyclean
 distclean: clean
 	-rm Makefile
 
-correct:
+correct: dict
 	correct -d dict *.sgml
 
-HTML.manifest: $(DOC).sgml $(NEEDED)
+HTML.manifest: $(DOC).sgml $(NEEDED) updatehader
 	$(JADE) -i output.html -V html-manifest -t sgml \
 		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml
 	-xargs tidy -i -m -f /dev/null ${TIDYFLAGS} < HTML.manifest
@@ -117,3 +119,12 @@ install: $(REFERENCED) HTML.manifest $(DOC).html $(DOC).pdf
 	xargs -i{} install -m 0644 {} $(DESTDIR)$(pkgdatadir)/$(DOC)-Multipart/ < HTML.manifest
 	install -m 0644 $(REFERENCED) $(DESTDIR)$(pkgdatadir)/
 	install -m 0644 $(DOC).html $(DOC).pdf $(DESTDIR)$(pkgdatadir)/
+
+distdir: $(DISTFILES)
+	test ! -d "$(distdir)" || rm -rf "$(distdir)"
+	mkdir -- "$(distdir)"
+	cp -p $(DISTFILES) "$(distdir)/"
+
+dist: distdir
+	tar cohf - "$(distdir)" | gzip --best -c > "$(distdir).tar.gz"
+	test ! -d "$(distdir)" || rm -rf "$(distdir)"
