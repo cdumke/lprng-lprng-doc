@@ -10538,7 +10538,7 @@ but with a higher level of verbosity.</para>
 are network connections,
 parallel ports,
 or serial ports;
-while Fibre Channel, SCSI, USB, FireWire,
+while Fibre Channel, SCSI, FireWire,
 InfraRed,
 and other interesting technologies have been used,
 they are either very specialized or not directly
@@ -11732,6 +11732,18 @@ it is strongly recommended that they be attached to a <emphasis>network print bo
 which will provide a
 Socket API interface and handle the low level network to serial port protocol
 conversions.</para>
+
+</sect1>
+<sect1 id="secusb"><title>USB Printers </title>
+
+<para>By far the most common type of printer connection for home use is
+the USB-connected printers. For the most part the printer looks like a
+bi-directional parallel printer that uses a different device name.
+</para>
+
+<para>Almost all USB printers can send back to the computer status information. However the difficultly lies with there is no single standard used with
+the printers for this status information.
+</para>
 
 </sect1>
 </chapter>
