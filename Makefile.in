@@ -17,7 +17,7 @@ DOC=LPRng-Reference
 SRC=@SRCDIR@
 JADE=@JADE@
 JADETEX=@JADETEX@
-VERSION=3.8.29
+VERSION=3.8.Arc2
 
 # if not in your standard sgml search path, something like:
 #      -c /usr/local/share/sgml/catalog \
@@ -105,7 +105,7 @@ distclean: clean
 correct: dict
 	correct -d dict *.sgml
 
-HTML.manifest: $(DOC).sgml $(NEEDED) updatehader
+HTML.manifest: $(DOC).sgml $(NEEDED) updateheader
 	$(JADE) -i output.html -V html-manifest -t sgml \
 		$(CATALOGS) -d $(FMT).dsl $(DOC).sgml
 	-xargs tidy -i -m -f /dev/null ${TIDYFLAGS} < HTML.manifest
