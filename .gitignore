@@ -1,0 +1,13 @@
+genindex.sgml
+license.enc
+HTML.*
+*.aux
+*.dvi
+*.log
+*.htm
+LPRng-Reference.pdf
+LPRng-Reference.ps
+LPRng-Reference.tex
+LPRng-Reference.html
+LPRng-Reference-Multipart
+Makefile
